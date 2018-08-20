@@ -248,27 +248,35 @@ float randn (float mu, float sigma){
   return (mu + sigma * (float) X1);
 }
 
+
+
 int main(){
 	NN *nn = (NN*)malloc(sizeof(NN));
 	int arr[4];
-	arr[0] = 1;
-	arr[1] = 50;
+	arr[0] = 4;
+	arr[1] = 100;
 	arr[2] = 10;
 	arr[3] = 1;
 	init_NN(nn,arr,4);
 	
 	int i=0;
-	float inputVal[1];
-	inputVal[0] = -1;
-	float answer[1];
-	answer[0] = 5;
+	float inputVal[4];
+	inputVal[0] = -100;
+	inputVal[1] = 100;
+	inputVal[2] = 1;
+	inputVal[3] = 4;
 
-	for(i=0; i<50; i++){
-		float *output = feedForward(nn,inputVal, 1);
-		printf("%f\n", output[0]);
-		backPropagation(nn,answer,1,1);
-		update(nn,0.1);
-		parameterZeroSet(nn);
+	float answer[1];
+	answer[0] = 123123;
+
+	for(i=1; i<=9999; i++){
+		float *output = feedForward(nn,inputVal, 4);
+		printf("%f\n",output[0]);
+		backPropagation(nn,answer,1,20);
+		if(i%20 == 0){
+			update(nn,0.05);
+			parameterZeroSet(nn);
+		}
 		free(output);
 	}
 	return 0;

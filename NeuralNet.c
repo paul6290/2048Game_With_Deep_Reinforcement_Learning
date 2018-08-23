@@ -188,7 +188,9 @@ void backPropagation(NN *nn, float *answer, int inputSize, int batchSize){
             }
         }
     }
-    
+    for(i=0; i<nn->layerNum; i++){
+        free(nodeError[i]);
+    }
     free(nodeError); // 메모리 해제
 }
 

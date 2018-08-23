@@ -23,7 +23,13 @@ int getRandomNumber(int s, int e){ //범위start <= 난수 <= end
 }
 
 void initializeBoard(int size){
-	free(board2048);
+    if(board2048 != NULL){
+        int i;
+        for(i=0; i<boardSize; i++){
+            free(board2048[i]);
+        }
+        free(board2048);
+    }
 	boardSize = size;
 	board2048 = (int **)malloc(sizeof(int*)*boardSize);
 	int i,j,r;
@@ -301,9 +307,9 @@ int main(){
     //Deep Q Learning
     const float MIN_Q_VAL = -1*FLT_MAX; // Q_VALUE 최솟값 의미.
     const int replayMemorySize = 10000;
-    const int sampleNum = 100;
+    const int sampleNum = 1000;
     const float discounted_factor = 0.9;
-    const float learningRate = 0.01;
+    const float learningRate = 0.005;
     
 	srand(time(NULL)); // time seed 초기화
     
@@ -317,7 +323,7 @@ int main(){
     layer[3] = 4;
     init_NN(nn, layer, sizeof(layer)/sizeof(int));
     
-    int gameTurn = 500;
+    int gameTurn = 5000;
     int i,j,r;
     
     float e_val;
@@ -344,6 +350,7 @@ int main(){
                 float* output = feedForward(nn, prevState, boardSize*boardSize);
                 float max = MIN_Q_VAL;
                 for(j=0; j<4; j++){
+                    printf("%f %f %f %f\n", output[0], output[1], output[2], output[3]);
                     if(output[j] > max){
                         max = output[j];
                         action = j+1;

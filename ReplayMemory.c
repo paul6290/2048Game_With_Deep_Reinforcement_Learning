@@ -16,11 +16,10 @@ void init_RP(RP *rp, int size){ // ReplayMemory 초기화
 
 void insertTransition(RP *rp, TR *tr){ // 새로운 transition 삽입. ranNum은 0~rp->size-1 까지
     if(rp->curNum == rp->size){ // 꽉 차있다면 교체
-        int ranNum = getRandomNumber(0,rp->size-1);
+        int ranNum = getRandomNumber(0,rp->size-1); // 0부터 size-1 사이에 있는 수
         if(ranNum < 0 || ranNum >= rp->size) return; //안전장치
         memoryFreeTransition(rp->memory[ranNum]); //해당 transition 메모리 해제
         rp->memory[ranNum] = tr;
-        
     }else{ // 빈 공간이 있다면 추가
         rp->memory[rp->curNum] = tr;
         rp->curNum += 1;
@@ -51,4 +50,11 @@ TR** getTransitionSamples(RP *rp, int size){
         }
     }
     return samples; //samples는 free해야함
+}
+
+void init_TR(TR* tr, float *prevState, int action, int reward, float *nextState){
+    tr->prevState = prevState;
+    tr->action = action;
+    tr->reward = reward;
+    tr->nextState = nextState;
 }

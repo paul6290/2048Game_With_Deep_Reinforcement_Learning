@@ -5,7 +5,8 @@
 //Game 부분
 int **board2048;
 int boardSize = 4; //기본 4
-int gameFailReward = -1000;
+int gameFailReward = -20;
+int noDiffReward = -10;
 
 void printBoard(){ //board 출력
 	int i,j;
@@ -215,8 +216,9 @@ int getReward(int action){ // 1 -> UP  2 -> DOWN  3 -> LEFT  4 -> RIGHT
 		}
 	}
 	if(is_diff==0){
-		printf("REWARD: 0 , No Diff\n");
-		return reward;
+		//printf("REWARD: 0 , No Diff\n");
+		//return reward;
+        return noDiffReward;
 	}
 
 	//액션을 취하면 새로운 수(2 or 4)가 빈 곳에 나타난다. 만약 더이상 줄일 것이 없다고 판단되면 게임 종료이다.
@@ -296,113 +298,109 @@ float* getCurrentState(){
 }
 
 int main(){
+    //Deep Q Learning
+    const float MIN_Q_VAL = -1*FLT_MAX; // Q_VALUE 최솟값 의미.
+    const int replayMemorySize = 10000;
+    const int sampleNum = 100;
+    const float discounted_factor = 0.9;
+    const float learningRate = 0.01;
     
-    const float MIN_Q_VAL = FLT_MIN; // Q_VALUE 최솟값 의미.
-    const int replayMemorySize = 1000;
-	srand(time(NULL));
+	srand(time(NULL)); // time seed 초기화
     
     RP *rp = (RP*)malloc(sizeof(RP));
     init_RP(rp, replayMemorySize);
     NN *nn = (NN*)malloc(sizeof(NN));
     int layer[4];
     layer[0] = 16;
-    layer[1] = 50;
-    layer[2] = 30;
+    layer[1] = 100;
+    layer[2] = 50;
     layer[3] = 4;
     init_NN(nn, layer, sizeof(layer)/sizeof(int));
     
-    int gameTurn = 50;
+    int gameTurn = 500;
     int i,j,r;
     
-    float e_val = 0.9;
+    float e_val;
     
     for(i=0; i<=gameTurn; i++){
-        printf("\ne_val : "); // e-greedy 에서 e값 받음 점차적으로 줄여줌.
-        scanf("%f", &e_val);
+//        printf("\ne_val : "); // e-greedy 에서 e값 받음 점차적으로 줄여줌.
+//        scanf("%f", &e_val);
+        e_val = (float)(gameTurn-i)/(float)gameTurn;
+        printf("e_val = %f\n",e_val);
         initializeBoard(4); // 4*4보드 생성
         
-        //action 선택 : e-greedy 기법 사용
-        int ranAction = getRandomNumber(1,10);
-        int action;
-    
-        float *prevState = getCurrentState();
+        int exploitation_num = 0;
+        int exploration_num = 0;
         
-        if(ranAction > e_val*10){ // exploitation
-            float* output = feedForward(nn, prevState, boardSize*boardSize);
-            float max = MIN_Q_VAL;
-            for(j=0; j<4; j++){
-                if(output[j] > max){
-                    max = output[j];
-                    action = j+1;
-                }
-            }
-            free(output);
-        }else{ // exploration
-            action = getRandomNumber(1,4);
-        }
-        
-        int reward = getReward(action);
-        
-        if(reward == gameFailReward){ // 게임 성공 여부 판단해야함
+        while(1){
+            //action 선택 : e-greedy 기법 사용
+            int ranAction = getRandomNumber(1,10);
+            int action;
             
-        }
-        
-        float *nextState = getCurrentState();
-        TR *tr = (TR*)malloc(sizeof(TR));
-        
-        tr->prevState = prevState;
-        tr->action = action;
-        tr->reward = reward;
-        tr->nextState = nextState;
-        
-        insertTransition(rp, tr); // transition 삽입
-        
-    }
+            float *prevState = getCurrentState();
+            
+            if(ranAction > e_val*10){ // exploitation
+                exploitation_num++;
+                float* output = feedForward(nn, prevState, boardSize*boardSize);
+                float max = MIN_Q_VAL;
+                for(j=0; j<4; j++){
+                    if(output[j] > max){
+                        max = output[j];
+                        action = j+1;
+                    }
+                }
+                free(output);
+            }else{ // exploration 탐험
+                exploration_num++;
+                action = getRandomNumber(1,4);
+            }
+            
+            int reward = getReward(action); // action 수행!
+            float *nextState = getCurrentState();
+            TR *tr = (TR*)malloc(sizeof(TR));
+            init_TR(tr,prevState,action,reward,nextState); // transition 생성
+            insertTransition(rp, tr); // transition 삽입
+
+            //신경망 update
+            TR** samples = getTransitionSamples(rp, sampleNum); // sampleNum개 추출
+            if(samples != NULL){ // sampleNum만큼을 받아왔다면
+                for(j=0; j<sampleNum; j++){ // 각각 처리
+                    TR *sample = samples[j];
+                    // nextState FeedForward
+                    float *output_nextState = feedForward(nn, sample->nextState, boardSize*boardSize);
+                    float max = MIN_Q_VAL;
+                    for(r=0; r<4; r++){
+                        if(output_nextState[r] > max){
+                            max = output_nextState[r];
+                        }
+                    }
+                    free(output_nextState); // 메모리 해제
     
-    /*
-	initializeBoard(4);
-
-	while(1){
-		printBoard();
-		int action;
-		printf("\n\nNextAction :  ");
-		scanf("%d", &action);
-		int reward = getReward(action);
-		printf("Reward : %d\n\n", reward);
-		if(reward == gameFailReward) break;
-	}
-     */
-	
-	
-    /*
-	NN *nn = (NN*)malloc(sizeof(NN));
-	int arr[4];
-	arr[0] = 3;
-	arr[1] = 3;
-	arr[2] = 4;
-	arr[3] = 1;
-
-	init_NN(nn,arr,sizeof(arr)/sizeof(int));
-	
-	int i=0;
-	float inputVal[6];
-	inputVal[0] = -100;
-	inputVal[1] = 100;
-	inputVal[5] = -5;
-
-	float answer[1];
-	answer[0] = 1000;
-
-	for(i=1; i<=500; i++){
-		float *output = feedForward(nn, inputVal, sizeof(inputVal)/sizeof(float));
-		backPropagation(nn,answer,sizeof(answer)/sizeof(float),10);
-		if(i%10 == 0){
-			printf("%f \n",output[0]);
-			update(nn,0.01);
-			parameterZeroSet(nn);
-		}
-		free(output);
-	}
-	*/
+                    // prevState FeedForward
+                    float *output_prevState = feedForward(nn, sample->prevState, boardSize*boardSize);
+                    output_prevState[sample->action-1] = sample->reward + discounted_factor*max;
+  
+                    // backPropagation
+                    backPropagation(nn, output_prevState, 4, sampleNum);
+                    free(output_prevState); // 메모리 해제
+                }
+                update(nn, learningRate); // weight bias update.
+                free(samples); // 메모리 해제
+                parameterZeroSet(nn); // parameter 초기화
+            }
+            // Game Turn 처리
+            if(reward == gameFailReward){ // 실패 점수일 경우
+                printf("%d번째 판, 탐험 수 : %d , 착취 수 : %d \n", i+1, exploration_num, exploitation_num);
+                printBoard();
+                break;
+            }else if(reward >= 2048){ // 점수가 2048을 넘을 경우
+                printf("%d번째 판 \n", i+1);
+                printBoard();
+                break;
+            }else{
+                continue;
+            }
+        }
+    }
 	return 0;
 }

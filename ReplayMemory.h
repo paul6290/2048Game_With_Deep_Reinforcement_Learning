@@ -3,7 +3,7 @@
 
 struct Transition{
     float *prevState; // 이전 상태
-    int action;
+    int action; // 1 2 3 4
     int reward;
     float *nextState; // 새로운 상태
 };

@@ -5,7 +5,7 @@ extern int getRandomNumber(int s, int e);
 
 int **board2048;
 int boardSize = 4; //기본 4
-int gameFailReward = -100;
+int gameFailReward = -1000;
 int noDiffReward = -10;
 
 void printBoard(){ //board 출력
@@ -59,6 +59,43 @@ void initializeBoard(int size){
     
     if(s2%2 == 0) board2048[ry2][rx2] = 2;
     else board2048[ry2][rx2] = 4;
+}
+
+void initializeBoardWithScore(int maxScore, int size){ // 어떤 점수 이상으로 초기화를 해주는 것.
+    if(board2048 != NULL){
+        int i;
+        for(i=0; i<boardSize; i++){
+            free(board2048[i]);
+        }
+        free(board2048);
+    }
+    boardSize = size;
+    board2048 = (int **)malloc(sizeof(int*)*boardSize);
+    int i,j,r;
+    for(i=0; i<boardSize; i++){
+        board2048[i] = (int *)malloc(sizeof(int)*boardSize);
+        for(j=0; j<boardSize; j++){
+            board2048[i][j] = 0;
+        }
+    }
+    if(maxScore == 512){
+        board2048[0][0] = 512;
+        board2048[0][1] = 4;
+        board2048[0][2] = 2;
+        board2048[0][3] = 0;
+        board2048[1][0] = 256;
+        board2048[1][1] = 8;
+        board2048[1][2] = 2;
+        board2048[1][3] = 0;
+        board2048[2][0] = 4;
+        board2048[2][1] = 0;
+        board2048[2][2] = 0;
+        board2048[2][3] = 0;
+        board2048[3][0] = 0;
+        board2048[3][1] = 0;
+        board2048[3][2] = 0;
+        board2048[3][3] = 0;
+    }
 }
 
 int getReward(int action){ // 1 -> UP  2 -> DOWN  3 -> LEFT  4 -> RIGHT
